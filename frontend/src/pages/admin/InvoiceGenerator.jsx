@@ -1,0 +1,142 @@
+export default function InvoiceGenerator({ shipment }) {
+  const handlePrint = () => {
+    // Basic print setup - in a real app, you might use a library like react-to-print
+    // or open a new window with just the invoice HTML and call print()
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payment Receipt & Invoice - ${shipment.awb}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 40px; }
+            .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); font-size: 16px; line-height: 24px; }
+            .invoice-box table { width: 100%; line-height: inherit; text-align: left; border-collapse: collapse; }
+            .invoice-box table td { padding: 5px; vertical-align: top; }
+            .invoice-box table tr.top table td { padding-bottom: 20px; }
+            .invoice-box table tr.top table td.title { font-size: 35px; line-height: 45px; color: #333; }
+            .invoice-box table tr.information table td { padding-bottom: 40px; }
+            .invoice-box table tr.heading td { background: #eee; border-bottom: 1px solid #ddd; font-weight: bold; }
+            .invoice-box table tr.details td { padding-bottom: 20px; }
+            .invoice-box table tr.item td { border-bottom: 1px solid #eee; }
+            .invoice-box table tr.item.last td { border-bottom: none; }
+            .invoice-box table tr.total td:nth-child(2) { border-top: 2px solid #eee; font-weight: bold; }
+            .barcode { font-family: 'Libre Barcode 39', monospace; font-size: 40px; margin-top: 10px; }
+            @media print { .invoice-box { box-shadow: none; border: none; } }
+          </style>
+          <!-- Using Google Fonts for Barcode simulation -->
+          <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&display=swap" rel="stylesheet">
+        </head>
+        <body>
+          <div class="invoice-box">
+            <table>
+              <tr class="top">
+                <td colspan="2">
+                  <table>
+                    <tr>
+                      <td class="title" style="vertical-align: middle;">
+                        <img src="${window.location.origin}/assets/images/sai_logo_transparent.png" alt="SAI Logo" style="max-height: 80px; max-width: 200px;" /><br/>
+                        <span style="font-size: 14px; color: #777;">International Couriers & Cargo</span>
+                      </td>
+                      <td style="text-align: right; vertical-align: top;">
+                        <h2 style="margin: 0; color: #1E3446; text-transform: uppercase; font-size: 22px;">Payment Receipt</h2>
+                        Invoice #: INV-${Math.floor(Math.random() * 100000)}<br>
+                        Date: ${new Date(shipment.createdAt).toLocaleDateString()}<br>
+                        <strong>Tracking AWB: ${shipment.awb}</strong>
+                        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; margin-top: 15px;">
+                          <div style="text-align: right;">
+                            <div class="barcode">*${shipment.awb}*</div>
+                          </div>
+                          <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+                            'SAI INTERNATIONAL COURIERS\n' +
+                            '========================\n' +
+                            'Tracking AWB: ' + shipment.awb + '\n' +
+                            'Date: ' + new Date(shipment.createdAt).toLocaleDateString() + '\n' +
+                            '------------------------\n' +
+                            'SENDER: ' + shipment.senderName + '\n' +
+                            'Phone: ' + (shipment.senderPhone || 'N/A') + '\n' +
+                            'From: ' + (shipment.originHub || 'Kadapa Hub') + '\n' +
+                            '------------------------\n' +
+                            'RECEIVER: ' + shipment.receiverName + '\n' +
+                            'Phone: ' + (shipment.receiverPhone || 'N/A') + '\n' +
+                            'To: ' + shipment.destination + '\n' +
+                            '------------------------\n' +
+                            'Weight: ' + (shipment.weight || 'N/A') + '\n' +
+                            'Price: ' + (shipment.price || 'N/A') + '\n' +
+                            'Payment: ' + (shipment.paymentMethod || 'Cash') + ' - ' + (shipment.paymentStatus || 'Paid') + '\n' +
+                            '========================\n' +
+                            'Track at: www.saicouriers.com/tracking'
+                          )}" alt="Tracking QR Code" style="border: 1px solid #eee; padding: 2px; border-radius: 4px;" />
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr class="information">
+                <td colspan="2">
+                  <table>
+                    <tr>
+                      <td>
+                        <strong>Shipper (Sender)</strong><br>
+                        ${shipment.senderName}<br>
+                        ${shipment.originHub}<br>
+                        Andhra Pradesh, India
+                      </td>
+                      <td style="text-align: right;">
+                        <strong>Consignee (Receiver)</strong><br>
+                        ${shipment.receiverName}<br>
+                        ${shipment.destination}<br>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr class="heading">
+                <td>Payment Summary</td>
+                <td style="text-align: right;">Amount</td>
+              </tr>
+              <tr class="item">
+                <td>Total Price Quoted</td>
+                <td style="text-align: right; font-weight: bold; font-size: 1.1rem; color: #1E3446;">${shipment.price}</td>
+              </tr>
+              <tr class="item">
+                <td>Payment Method</td>
+                <td style="text-align: right; color: #555;">${shipment.paymentMethod || 'Cash'}</td>
+              </tr>
+              <tr class="item last">
+                <td>Payment Status</td>
+                <td style="text-align: right; color: ${shipment.paymentStatus?.toLowerCase() === 'unpaid' ? '#E74C3C' : '#27AE60'}; font-weight: bold; text-transform: uppercase;">
+                  ${shipment.paymentStatus || 'PAID'}
+                </td>
+              </tr>
+            </table>
+
+            ${shipment.images && shipment.images.length > 0 ? `
+              <div style="margin-top: 40px; page-break-inside: avoid;">
+                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 8px; color: #1E3446; font-size: 16px;">Stock / Contents Visual Proof</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                  ${shipment.images.map(img => `<img src="${img}" style="width: 160px; height: 160px; object-fit: cover; border: 1px solid #ccc; border-radius: 6px;" />`).join('')}
+                </div>
+              </div>
+            ` : ''}
+            
+            <div style="margin-top: 50px; font-size: 12px; color: #888; text-align: center;">
+              This is a computer generated commercial invoice. <br>
+              Track your shipment at www.saicouriers.com/tracking
+            </div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  return (
+    <button onClick={handlePrint} className="btn btn-teal">
+      <i className="fa-solid fa-print"></i> Print Commercial Invoice
+    </button>
+  );
+}
